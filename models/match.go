@@ -2,10 +2,13 @@ package models
 
 // Match represents a football match in the league
 type Match struct {
-	ID            int `json:"id" db:"id"`
-	Week          int `json:"week" db:"week"`
-	HomeTeamID    int `json:"homeTeamId" db:"home_team_id"`
-	AwayTeamID    int `json:"awayTeamId" db:"away_team_id"`
-	HomeTeamScore int `json:"homeTeamScore" db:"home_team_score"`
-	AwayTeamScore int `json:"awayTeamScore" db:"away_team_score"`
+	ID            uint `json:"id" db:"id" gorm:"primaryKey"`
+	Week          int  `json:"week" db:"week"`
+	HomeTeamID    uint `json:"homeTeamId" db:"home_team_id"`
+	AwayTeamID    uint `json:"awayTeamId" db:"away_team_id"`
+	HomeTeamScore int  `json:"homeTeamScore" db:"home_team_score"`
+	AwayTeamScore int  `json:"awayTeamScore" db:"away_team_score"`
+	IsPlayed      bool `json:"isPlayed" db:"is_played"`
+	HomeTeam      Team `json:"homeTeam" gorm:"foreignKey:HomeTeamID"`
+	AwayTeam      Team `json:"awayTeam" gorm:"foreignKey:AwayTeamID"`
 }

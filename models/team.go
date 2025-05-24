@@ -12,7 +12,7 @@ type Stats struct {
 
 // Team represents a football team in the league
 type Team struct {
-	ID       int    `json:"id" db:"id"`
+	ID       uint   `json:"id" db:"id" gorm:"primaryKey"`
 	Name     string `json:"name" db:"name"`
 	Strength int    `json:"strength" db:"strength"`
 	Stats    Stats  `json:"stats" db:"stats"`
