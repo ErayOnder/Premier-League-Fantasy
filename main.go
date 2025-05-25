@@ -54,6 +54,8 @@ func main() {
 	teamHandler := handlers.NewTeamHandler(teamService)
 	teams.Get("/", teamHandler.GetAllTeams)
 	teams.Get("/:id", teamHandler.GetTeamByID)
+	teams.Put("/:id", teamHandler.UpdateTeam)
+	teams.Delete("/:id", teamHandler.DeleteTeam)
 	teams.Post("/", teamHandler.CreateTeam)
 
 	// Start the server

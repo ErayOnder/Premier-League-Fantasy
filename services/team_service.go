@@ -10,6 +10,8 @@ type TeamService interface {
 	Create(team *models.Team) error
 	GetAll() ([]models.Team, error)
 	GetByID(id int) (*models.Team, error)
+	Update(team *models.Team) error
+	Delete(id int) error
 }
 
 // teamService implements TeamService interface
@@ -37,4 +39,14 @@ func (s *teamService) GetAll() ([]models.Team, error) {
 // GetByID retrieves a team by its ID using the repository
 func (s *teamService) GetByID(id int) (*models.Team, error) {
 	return s.repo.GetByID(id)
+}
+
+// Update modifies an existing team using the repository
+func (s *teamService) Update(team *models.Team) error {
+	return s.repo.Update(team)
+}
+
+// Delete removes a team using the repository
+func (s *teamService) Delete(id int) error {
+	return s.repo.Delete(id)
 }

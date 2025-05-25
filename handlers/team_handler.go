@@ -81,3 +81,61 @@ func (h *TeamHandler) GetTeamByID(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(team)
 }
+
+// UpdateTeam handles updating an existing team
+func (h *TeamHandler) UpdateTeam(c *fiber.Ctx) error {
+	// Get and parse the ID parameter
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid team ID",
+		})
+	}
+
+	// Create a new team instance and parse the request body
+	team := new(models.Team)
+	if err := c.BodyParser(team); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to parse request body",
+		})
+	}
+
+	// Set the ID from the URL parameter
+	team.ID = uint(id)
+
+	// Update the team using the service
+	if err := h.service.Update(team); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(team)
+}
+
+// DeleteTeam handles deleting a team
+func (h *TeamHandler) DeleteTeam(c *fiber.Ctx) error {
+	// Get and parse the ID parameter
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid team ID",
+		})
+	}
+
+	// Delete the team using the service
+	if err := h.service.Delete(id); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Team not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
