@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"insider-league/db"
+	"insider-league/handlers"
+	"insider-league/repository"
+	"insider-league/services"
 	"log"
 	"os"
 
@@ -29,6 +32,12 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Initialize repositories
+	teamRepo := repository.NewTeamRepository(db.DB)
+
+	// Initialize services
+	teamService := services.NewTeamService(teamRepo)
+
 	// Create a new Fiber app
 	app := fiber.New()
 
@@ -42,9 +51,8 @@ func main() {
 
 	// Teams routes
 	teams := api.Group("/teams")
-	teams.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Will get all teams")
-	}) // For now, just return a string
+	teamHandler := handlers.NewTeamHandler(teamService)
+	teams.Post("/", teamHandler.CreateTeam)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")
