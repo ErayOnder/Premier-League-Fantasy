@@ -34,9 +34,11 @@ func main() {
 
 	// Initialize repositories
 	teamRepo := repository.NewTeamRepository(db.DB)
+	matchRepo := repository.NewMatchRepository(db.DB)
 
 	// Initialize services
 	teamService := services.NewTeamService(teamRepo)
+	matchService := services.NewMatchService(matchRepo)
 
 	// Create a new Fiber app
 	app := fiber.New()
@@ -57,6 +59,11 @@ func main() {
 	teams.Put("/:id", teamHandler.UpdateTeam)
 	teams.Delete("/:id", teamHandler.DeleteTeam)
 	teams.Post("/", teamHandler.CreateTeam)
+
+	// Matches routes
+	matches := api.Group("/matches")
+	matchHandler := handlers.NewMatchHandler(matchService)
+	matches.Post("/", matchHandler.CreateMatch)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")
