@@ -63,6 +63,8 @@ func main() {
 	// Matches routes
 	matches := api.Group("/matches")
 	matchHandler := handlers.NewMatchHandler(matchService)
+	matches.Get("/", matchHandler.GetAllMatches)
+	matches.Get("/:id", matchHandler.GetMatchByID)
 	matches.Post("/", matchHandler.CreateMatch)
 
 	// Start the server

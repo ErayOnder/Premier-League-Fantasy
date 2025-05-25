@@ -55,7 +55,10 @@ func (r *matchRepository) GetByWeek(week int) ([]models.Match, error) {
 // Create adds a new match to the database
 func (r *matchRepository) Create(match *models.Match) error {
 	result := r.db.Create(match)
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+	return r.db.Preload("HomeTeam").Preload("AwayTeam").First(match, match.ID).Error
 }
 
 // Update modifies an existing match in the database
