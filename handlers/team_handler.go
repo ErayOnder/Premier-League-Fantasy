@@ -3,8 +3,10 @@ package handlers
 import (
 	"insider-league/models"
 	"insider-league/services"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 // TeamHandler handles team-related HTTP requests
@@ -51,4 +53,31 @@ func (h *TeamHandler) GetAllTeams(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(teams)
+}
+
+// GetTeamByID handles retrieving a team by its ID
+func (h *TeamHandler) GetTeamByID(c *fiber.Ctx) error {
+	// Get and parse the ID parameter
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid team ID",
+		})
+	}
+
+	// Get the team using the service
+	team, err := h.service.GetByID(id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Team not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(team)
 }

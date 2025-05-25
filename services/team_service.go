@@ -9,6 +9,7 @@ import (
 type TeamService interface {
 	Create(team *models.Team) error
 	GetAll() ([]models.Team, error)
+	GetByID(id int) (*models.Team, error)
 }
 
 // teamService implements TeamService interface
@@ -31,4 +32,9 @@ func (s *teamService) Create(team *models.Team) error {
 // GetAll retrieves all teams using the repository
 func (s *teamService) GetAll() ([]models.Team, error) {
 	return s.repo.GetAll()
+}
+
+// GetByID retrieves a team by its ID using the repository
+func (s *teamService) GetByID(id int) (*models.Team, error) {
+	return s.repo.GetByID(id)
 }

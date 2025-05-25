@@ -53,6 +53,7 @@ func main() {
 	teams := api.Group("/teams")
 	teamHandler := handlers.NewTeamHandler(teamService)
 	teams.Get("/", teamHandler.GetAllTeams)
+	teams.Get("/:id", teamHandler.GetTeamByID)
 	teams.Post("/", teamHandler.CreateTeam)
 
 	// Start the server
