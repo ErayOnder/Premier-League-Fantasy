@@ -81,3 +81,66 @@ func (h *MatchHandler) GetMatchByID(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(match)
 }
+
+// UpdateMatch handles updating an existing match
+func (h *MatchHandler) UpdateMatch(c *fiber.Ctx) error {
+	// Get and parse the ID parameter
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid match ID",
+		})
+	}
+
+	// Create a new match instance and parse the request body
+	match := new(models.Match)
+	if err := c.BodyParser(match); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to parse request body",
+		})
+	}
+
+	// Set the ID from the URL parameter
+	match.ID = uint(id)
+
+	// Update the match using the service
+	if err := h.service.Update(match); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Match not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(match)
+}
+
+// DeleteMatch handles deleting a match
+func (h *MatchHandler) DeleteMatch(c *fiber.Ctx) error {
+	// Get and parse the ID parameter
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid match ID",
+		})
+	}
+
+	// Delete the match using the service
+	if err := h.service.Delete(id); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Match not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

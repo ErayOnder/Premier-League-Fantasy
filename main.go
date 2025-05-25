@@ -65,6 +65,8 @@ func main() {
 	matchHandler := handlers.NewMatchHandler(matchService)
 	matches.Get("/", matchHandler.GetAllMatches)
 	matches.Get("/:id", matchHandler.GetMatchByID)
+	matches.Put("/:id", matchHandler.UpdateMatch)
+	matches.Delete("/:id", matchHandler.DeleteMatch)
 	matches.Post("/", matchHandler.CreateMatch)
 
 	// Start the server

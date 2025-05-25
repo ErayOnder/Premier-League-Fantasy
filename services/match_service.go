@@ -10,6 +10,8 @@ type MatchService interface {
 	Create(match *models.Match) error
 	GetAll() ([]models.Match, error)
 	GetByID(id int) (*models.Match, error)
+	Update(match *models.Match) error
+	Delete(id int) error
 }
 
 // matchService implements MatchService interface
@@ -37,4 +39,14 @@ func (s *matchService) GetAll() ([]models.Match, error) {
 // GetByID retrieves a match by its ID using the repository
 func (s *matchService) GetByID(id int) (*models.Match, error) {
 	return s.repo.GetByID(id)
+}
+
+// Update modifies an existing match using the repository
+func (s *matchService) Update(match *models.Match) error {
+	return s.repo.Update(match)
+}
+
+// Delete removes a match using the repository
+func (s *matchService) Delete(id int) error {
+	return s.repo.Delete(id)
 }
