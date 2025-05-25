@@ -40,3 +40,15 @@ func (h *TeamHandler) CreateTeam(c *fiber.Ctx) error {
 	// Return the created team with a 201 status code
 	return c.Status(fiber.StatusCreated).JSON(team)
 }
+
+// GetAllTeams handles retrieving all teams
+func (h *TeamHandler) GetAllTeams(c *fiber.Ctx) error {
+	teams, err := h.service.GetAll()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(teams)
+}
