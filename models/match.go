@@ -9,4 +9,8 @@ type Match struct {
 	HomeTeamScore int  `json:"homeTeamScore" db:"home_team_score"`
 	AwayTeamScore int  `json:"awayTeamScore" db:"away_team_score"`
 	IsPlayed      bool `json:"isPlayed" db:"is_played"`
+
+	// Foreign key relationships
+	HomeTeam Team `json:"homeTeam" gorm:"foreignKey:HomeTeamID"`
+	AwayTeam Team `json:"awayTeam" gorm:"foreignKey:AwayTeamID"`
 }

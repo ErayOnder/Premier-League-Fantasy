@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"insider-league/services"
 	"strconv"
 
@@ -31,15 +32,24 @@ func (h *LeagueHandler) PlayWeek(c *fiber.Ctx) error {
 	}
 
 	// Play the week's matches
-	teams, predictions, err := h.service.PlayWeek(week)
+	teams, matches, predictions, err := h.service.PlayWeek(week)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
+	// If teams is nil, it means the week was already played
+	if teams == nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": fmt.Sprintf("Week %d has already been played", week),
+			"matches": matches,
+		})
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"league_table": teams,
+		"matches":      matches,
 		"predictions":  predictions,
 	})
 }
@@ -100,5 +110,18 @@ func (h *LeagueHandler) EditMatchResult(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"match":        match,
 		"league_table": leagueTable,
+	})
+}
+
+// ResetLeague resets all match results and team statistics
+func (h *LeagueHandler) ResetLeague(c *fiber.Ctx) error {
+	if err := h.service.ResetLeague(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "League has been reset successfully",
 	})
 }

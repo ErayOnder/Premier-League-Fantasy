@@ -82,6 +82,7 @@ func main() {
 	league.Get("/play/:week", leagueHandler.PlayWeek)
 	league.Get("/play-all", leagueHandler.PlayAll)
 	league.Put("/edit-match/:id", leagueHandler.EditMatchResult)
+	league.Post("/reset", leagueHandler.ResetLeague)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")

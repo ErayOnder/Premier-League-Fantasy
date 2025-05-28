@@ -31,14 +31,14 @@ func NewMatchRepository(db *gorm.DB) MatchRepository {
 // GetAll retrieves all matches from the database
 func (r *matchRepository) GetAll() ([]models.Match, error) {
 	var matches []models.Match
-	result := r.db.Find(&matches)
+	result := r.db.Preload("HomeTeam").Preload("AwayTeam").Find(&matches)
 	return matches, result.Error
 }
 
 // GetByID retrieves a match by its ID
 func (r *matchRepository) GetByID(id int) (*models.Match, error) {
 	var match models.Match
-	result := r.db.First(&match, id)
+	result := r.db.Preload("HomeTeam").Preload("AwayTeam").First(&match, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -48,7 +48,7 @@ func (r *matchRepository) GetByID(id int) (*models.Match, error) {
 // GetByWeek retrieves all matches for a specific week
 func (r *matchRepository) GetByWeek(week int) ([]models.Match, error) {
 	var matches []models.Match
-	result := r.db.Where("week = ?", week).Find(&matches)
+	result := r.db.Preload("HomeTeam").Preload("AwayTeam").Where("week = ?", week).Find(&matches)
 	return matches, result.Error
 }
 

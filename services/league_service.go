@@ -8,9 +8,10 @@ import (
 
 // LeagueService defines the interface for league-related operations
 type LeagueService interface {
-	PlayWeek(week int) ([]models.Team, []models.Prediction, error)
+	PlayWeek(week int) ([]models.Team, []models.Match, []models.Prediction, error)
 	PlayAll() ([]models.Team, error)
 	EditMatchResult(matchID int, homeGoals, awayGoals int) (*models.Match, []models.Team, error)
+	ResetLeague() error
 }
 
 // leagueService implements the LeagueService interface
@@ -28,35 +29,34 @@ func NewLeagueService(teamService TeamService, matchService MatchService) League
 }
 
 // PlayWeek simulates all matches for a given week
-func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, error) {
-	// Get all teams
-	teams, err := s.teamService.GetAll()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get all matches for the week
+func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Match, []models.Prediction, error) {
+	// Get all matches for the week (with preloaded teams)
 	matches, err := s.matchService.GetByWeek(week)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+
+	// Check if any matches are already played
+	weekAlreadyPlayed := false
+	for _, match := range matches {
+		if match.IsPlayed {
+			weekAlreadyPlayed = true
+			break
+		}
+	}
+
+	// If week is already played, return just the match results
+	if weekAlreadyPlayed {
+		return nil, matches, nil, nil
 	}
 
 	// Simulate each match
-	for _, match := range matches {
-		// Find home and away teams
-		var homeTeam, awayTeam *models.Team
-		for i := range teams {
-			if teams[i].ID == match.HomeTeamID {
-				homeTeam = &teams[i]
-			}
-			if teams[i].ID == match.AwayTeamID {
-				awayTeam = &teams[i]
-			}
-		}
+	for i := range matches {
+		match := &matches[i]
 
-		if homeTeam == nil || awayTeam == nil {
-			continue
-		}
+		// Use the preloaded teams
+		homeTeam := &match.HomeTeam
+		awayTeam := &match.AwayTeam
 
 		// Simulate match score
 		homeGoals, awayGoals := helpers.SimulateMatchScore(homeTeam.Strength, awayTeam.Strength)
@@ -67,20 +67,20 @@ func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, 
 		match.IsPlayed = true
 
 		// Update match in database
-		if err := s.matchService.Update(&match); err != nil {
-			return nil, nil, err
+		if err := s.matchService.Update(match); err != nil {
+			return nil, nil, nil, err
 		}
 
 		// Update team statistics
 		if err := s.teamService.UpdateMatchStats(homeTeam, awayTeam, homeGoals, awayGoals, false); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
 	// Get updated league table
 	leagueTable, err := s.teamService.GetLeagueTable()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Calculate predictions if we're at week 4 or later
@@ -89,7 +89,7 @@ func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, 
 		predictions = helpers.CalculatePredictions(leagueTable)
 	}
 
-	return leagueTable, predictions, nil
+	return leagueTable, matches, predictions, nil
 }
 
 // PlayAll simulates all remaining matches in the league
@@ -117,7 +117,7 @@ func (s *leagueService) PlayAll() ([]models.Team, error) {
 
 	// Play each week in order
 	for _, week := range weeks {
-		_, _, err := s.PlayWeek(week)
+		_, _, _, err := s.PlayWeek(week)
 		if err != nil {
 			return nil, err
 		}
@@ -177,4 +177,45 @@ func (s *leagueService) EditMatchResult(matchID int, homeGoals, awayGoals int) (
 	}
 
 	return match, leagueTable, nil
+}
+
+// ResetLeague resets all match results and team statistics
+func (s *leagueService) ResetLeague() error {
+	// Reset all matches
+	matches, err := s.matchService.GetAll()
+	if err != nil {
+		return err
+	}
+
+	for _, match := range matches {
+		match.HomeTeamScore = 0
+		match.AwayTeamScore = 0
+		match.IsPlayed = false
+		if err := s.matchService.Update(&match); err != nil {
+			return err
+		}
+	}
+
+	// Reset all teams
+	teams, err := s.teamService.GetAll()
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams {
+		team.Stats = models.Stats{
+			Points:         0,
+			GoalsFor:       0,
+			GoalsAgainst:   0,
+			GoalDifference: 0,
+			Wins:           0,
+			Draws:          0,
+			Losses:         0,
+		}
+		if err := s.teamService.Update(&team); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

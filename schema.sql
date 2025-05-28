@@ -16,8 +16,8 @@ CREATE TABLE teams (
 CREATE TABLE matches (
     id SERIAL PRIMARY KEY,
     week INTEGER NOT NULL,
-    home_team_id INTEGER NOT NULL REFERENCES teams(id),
-    away_team_id INTEGER NOT NULL REFERENCES teams(id),
+    home_team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    away_team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     home_team_score INTEGER NOT NULL DEFAULT 0,
     away_team_score INTEGER NOT NULL DEFAULT 0,
     is_played BOOLEAN NOT NULL DEFAULT false
