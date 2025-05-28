@@ -70,7 +70,7 @@ func TestLeagueService_EditMatchResult(t *testing.T) {
 	mockTeamService.On("GetByID", 2).Return(awayTeam, nil).Once()
 
 	// First call: Revert the original match result (2-0) with revert=true
-	mockTeamService.On("UpdateMatchStats", homeTeam, awayTeam, 2, 0, true).Return(nil).Once()
+	mockTeamService.On("UpdateTeamStats", homeTeam, awayTeam, 2, 0, true).Return(nil).Once()
 
 	// Update match expectation
 	mockMatchService.On("Update", mock.MatchedBy(func(match *models.Match) bool {
@@ -78,10 +78,10 @@ func TestLeagueService_EditMatchResult(t *testing.T) {
 	})).Return(nil).Once()
 
 	// Second call: Apply the new match result (3-1) with revert=false
-	mockTeamService.On("UpdateMatchStats", homeTeam, awayTeam, newHomeGoals, newAwayGoals, false).Return(nil).Once()
+	mockTeamService.On("UpdateTeamStats", homeTeam, awayTeam, newHomeGoals, newAwayGoals, false).Return(nil).Once()
 
 	// Get league table expectation
-	mockTeamService.On("GetLeagueTable").Return(expectedLeagueTable, nil).Once()
+	mockTeamService.On("GetTeamRankings").Return(expectedLeagueTable, nil).Once()
 
 	// Call the function under test
 	updatedMatch, leagueTable, err := service.EditMatchResult(matchID, newHomeGoals, newAwayGoals)
@@ -209,9 +209,9 @@ func TestLeagueService_PlayWeek(t *testing.T) {
 				})).Return(nil).Once()
 			}
 
-			// For each match, expect UpdateMatchStats to be called
+			// For each match, expect UpdateTeamStats to be called
 			for range matches {
-				mockTeamService.On("UpdateMatchStats",
+				mockTeamService.On("UpdateTeamStats",
 					mock.MatchedBy(func(homeTeam *models.Team) bool {
 						return homeTeam.ID == 1 || homeTeam.ID == 2
 					}),
@@ -224,8 +224,8 @@ func TestLeagueService_PlayWeek(t *testing.T) {
 				).Return(nil).Once()
 			}
 
-			// Expect GetLeagueTable to be called
-			mockTeamService.On("GetLeagueTable").Return(expectedLeagueTable, nil).Once()
+			// Expect GetTeamRankings to be called
+			mockTeamService.On("GetTeamRankings").Return(expectedLeagueTable, nil).Once()
 
 			// Call the function under test
 			leagueTable, returnedMatches, predictions, err := service.PlayWeek(tt.week)

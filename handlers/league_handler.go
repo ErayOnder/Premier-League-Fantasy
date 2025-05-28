@@ -125,3 +125,17 @@ func (h *LeagueHandler) ResetLeague(c *fiber.Ctx) error {
 		"message": "League has been reset successfully",
 	})
 }
+
+// GetLeagueTable retrieves the current league table
+func (h *LeagueHandler) GetLeagueTable(c *fiber.Ctx) error {
+	teams, err := h.service.GetLeagueTable()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"teams": teams,
+	})
+}

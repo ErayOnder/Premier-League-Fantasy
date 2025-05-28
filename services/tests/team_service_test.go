@@ -192,7 +192,7 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			})).Return(nil).Once()
 
 			// Call the function under test
-			err := service.UpdateMatchStats(homeTeam, awayTeam, tt.homeGoals, tt.awayGoals, tt.revert)
+			err := service.UpdateTeamStats(homeTeam, awayTeam, tt.homeGoals, tt.awayGoals, tt.revert)
 
 			// Assertions
 			assert.NoError(t, err, "UpdateMatchStats should not return an error")
@@ -205,7 +205,7 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 	}
 }
 
-func TestTeamService_GetLeagueTable(t *testing.T) {
+func TestTeamService_GetTeamRankings(t *testing.T) {
 	// Create mock repository
 	mockRepo := new(repomocks.MockTeamRepository)
 
@@ -256,10 +256,10 @@ func TestTeamService_GetLeagueTable(t *testing.T) {
 	mockRepo.On("GetAll").Return(unsortedTeams, nil).Once()
 
 	// Call the function under test
-	sortedTeams, err := service.GetLeagueTable()
+	sortedTeams, err := service.GetTeamRankings()
 
 	// Assertions
-	assert.NoError(t, err, "GetLeagueTable should not return an error")
+	assert.NoError(t, err, "GetTeamRankings should not return an error")
 	assert.Len(t, sortedTeams, 4, "Should return all 4 teams")
 
 	// Verify correct sorting order

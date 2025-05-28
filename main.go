@@ -79,6 +79,7 @@ func main() {
 	// League routes
 	league := api.Group("/league")
 	leagueHandler := handlers.NewLeagueHandler(leagueService)
+	league.Get("/", leagueHandler.GetLeagueTable)
 	league.Get("/play/:week", leagueHandler.PlayWeek)
 	league.Get("/play-all", leagueHandler.PlayAll)
 	league.Put("/edit-match/:id", leagueHandler.EditMatchResult)

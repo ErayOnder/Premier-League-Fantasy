@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockTeamService is a mock implementation of TeamService interface
+// MockTeamService is a mock of TeamService interface
 type MockTeamService struct {
 	mock.Mock
 }
@@ -50,8 +50,14 @@ func (m *MockTeamService) GetLeagueTable() ([]models.Team, error) {
 	return args.Get(0).([]models.Team), args.Error(1)
 }
 
-// UpdateMatchStats mocks the UpdateMatchStats method
-func (m *MockTeamService) UpdateMatchStats(homeTeam, awayTeam *models.Team, homeGoals, awayGoals int, revert bool) error {
+// UpdateTeamStats mocks the UpdateTeamStats method
+func (m *MockTeamService) UpdateTeamStats(homeTeam, awayTeam *models.Team, homeGoals, awayGoals int, revert bool) error {
 	args := m.Called(homeTeam, awayTeam, homeGoals, awayGoals, revert)
 	return args.Error(0)
+}
+
+// GetTeamRankings mocks base method
+func (m *MockTeamService) GetTeamRankings() ([]models.Team, error) {
+	args := m.Called()
+	return args.Get(0).([]models.Team), args.Error(1)
 }

@@ -13,8 +13,8 @@ type TeamService interface {
 	GetByID(id int) (*models.Team, error)
 	Update(team *models.Team) error
 	Delete(id int) error
-	GetLeagueTable() ([]models.Team, error)
-	UpdateMatchStats(homeTeam, awayTeam *models.Team, homeGoals, awayGoals int, revert bool) error
+	GetTeamRankings() ([]models.Team, error)
+	UpdateTeamStats(homeTeam, awayTeam *models.Team, homeGoals, awayGoals int, revert bool) error
 }
 
 // teamService implements TeamService interface
@@ -54,8 +54,8 @@ func (s *teamService) Delete(id int) error {
 	return s.repo.Delete(id)
 }
 
-// GetLeagueTable retrieves all teams sorted by points, goal difference, and goals scored
-func (s *teamService) GetLeagueTable() ([]models.Team, error) {
+// GetTeamRankings retrieves and sorts teams by their league position
+func (s *teamService) GetTeamRankings() ([]models.Team, error) {
 	teams, err := s.repo.GetAll()
 	if err != nil {
 		return nil, err
@@ -82,9 +82,9 @@ func (s *teamService) GetLeagueTable() ([]models.Team, error) {
 	return teams, nil
 }
 
-// UpdateMatchStats updates the statistics for both teams based on the match result
+// UpdateTeamStats updates the statistics for both teams based on the match result
 // If revert is true, it will subtract the statistics instead of adding them
-func (s *teamService) UpdateMatchStats(homeTeam, awayTeam *models.Team, homeGoals, awayGoals int, revert bool) error {
+func (s *teamService) UpdateTeamStats(homeTeam, awayTeam *models.Team, homeGoals, awayGoals int, revert bool) error {
 	// Determine the multiplier based on whether we're reverting or applying
 	multiplier := 1
 	if revert {
