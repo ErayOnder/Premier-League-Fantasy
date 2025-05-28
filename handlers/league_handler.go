@@ -43,3 +43,18 @@ func (h *LeagueHandler) PlayWeek(c *fiber.Ctx) error {
 		"predictions":  predictions,
 	})
 }
+
+// PlayAll handles simulating all remaining matches in the league
+func (h *LeagueHandler) PlayAll(c *fiber.Ctx) error {
+	// Play all remaining matches
+	leagueTable, err := h.service.PlayAll()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"league_table": leagueTable,
+	})
+}

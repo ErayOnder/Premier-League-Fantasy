@@ -4,11 +4,13 @@ import (
 	"insider-league/helpers"
 	"insider-league/models"
 	"insider-league/repository"
+	"sort"
 )
 
 // LeagueService defines the interface for league-related operations
 type LeagueService interface {
 	PlayWeek(week int) ([]models.Team, []models.Prediction, error)
+	PlayAll() ([]models.Team, error)
 }
 
 // leagueService implements the LeagueService interface
@@ -112,4 +114,44 @@ func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, 
 	}
 
 	return leagueTable, predictions, nil
+}
+
+// PlayAll simulates all remaining matches in the league
+func (s *leagueService) PlayAll() ([]models.Team, error) {
+	// Get all matches
+	matches, err := s.matchRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map to track unique weeks
+	weekMap := make(map[int]bool)
+	for _, match := range matches {
+		if !match.IsPlayed {
+			weekMap[match.Week] = true
+		}
+	}
+
+	// Convert map to sorted slice of weeks
+	weeks := make([]int, 0, len(weekMap))
+	for week := range weekMap {
+		weeks = append(weeks, week)
+	}
+	sort.Ints(weeks)
+
+	// Play each week in order
+	for _, week := range weeks {
+		_, _, err := s.PlayWeek(week)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Get final league table
+	leagueTable, err := s.teamRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return leagueTable, nil
 }

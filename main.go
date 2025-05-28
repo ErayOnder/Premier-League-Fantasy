@@ -74,6 +74,7 @@ func main() {
 	league := api.Group("/league")
 	leagueHandler := handlers.NewLeagueHandler(leagueService)
 	league.Get("/play/:week", leagueHandler.PlayWeek)
+	league.Get("/play-all", leagueHandler.PlayAll)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")
