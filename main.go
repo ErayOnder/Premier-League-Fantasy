@@ -39,6 +39,7 @@ func main() {
 	// Initialize services
 	teamService := services.NewTeamService(teamRepo)
 	matchService := services.NewMatchService(matchRepo)
+	leagueService := services.NewLeagueService(teamRepo, matchRepo)
 
 	// Create a new Fiber app
 	app := fiber.New()
@@ -68,6 +69,11 @@ func main() {
 	matches.Put("/:id", matchHandler.UpdateMatch)
 	matches.Delete("/:id", matchHandler.DeleteMatch)
 	matches.Post("/", matchHandler.CreateMatch)
+
+	// League routes
+	league := api.Group("/league")
+	leagueHandler := handlers.NewLeagueHandler(leagueService)
+	league.Get("/play/:week", leagueHandler.PlayWeek)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")

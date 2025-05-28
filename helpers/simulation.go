@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"fmt"
+	"insider-league/models"
 	"math/rand"
 )
 
@@ -34,4 +36,30 @@ func SimulateMatchScore(homeTeamStrength, awayTeamStrength int) (homeGoals, away
 	}
 
 	return homeGoals, awayGoals
+}
+
+// CalculatePredictions calculates championship chances for each team based on their points
+func CalculatePredictions(teams []models.Team) []models.Prediction {
+	// Calculate total points
+	totalPoints := 0
+	for _, team := range teams {
+		totalPoints += team.Stats.Points
+	}
+
+	// If no points have been scored yet, return empty predictions
+	if totalPoints == 0 {
+		return []models.Prediction{}
+	}
+
+	// Calculate predictions for each team
+	predictions := make([]models.Prediction, len(teams))
+	for i, team := range teams {
+		percentage := float64(team.Stats.Points) * 100 / float64(totalPoints)
+		predictions[i] = models.Prediction{
+			TeamName: team.Name,
+			Chance:   fmt.Sprintf("%.1f%%", percentage),
+		}
+	}
+
+	return predictions
 }

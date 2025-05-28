@@ -31,12 +31,15 @@ func (h *LeagueHandler) PlayWeek(c *fiber.Ctx) error {
 	}
 
 	// Play the week's matches
-	teams, err := h.service.PlayWeek(week)
+	teams, predictions, err := h.service.PlayWeek(week)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(teams)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"league_table": teams,
+		"predictions":  predictions,
+	})
 }

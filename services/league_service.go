@@ -4,15 +4,14 @@ import (
 	"insider-league/helpers"
 	"insider-league/models"
 	"insider-league/repository"
-	"sort"
 )
 
-// LeagueService defines the interface for league operations
+// LeagueService defines the interface for league-related operations
 type LeagueService interface {
-	PlayWeek(week int) ([]models.Team, error)
+	PlayWeek(week int) ([]models.Team, []models.Prediction, error)
 }
 
-// leagueService implements LeagueService interface
+// leagueService implements the LeagueService interface
 type leagueService struct {
 	teamRepo  repository.TeamRepository
 	matchRepo repository.MatchRepository
@@ -26,94 +25,91 @@ func NewLeagueService(teamRepo repository.TeamRepository, matchRepo repository.M
 	}
 }
 
-// PlayWeek simulates all matches for a given week and returns the updated league table
-func (s *leagueService) PlayWeek(week int) ([]models.Team, error) {
-	// Get all matches for the specified week
-	matches, err := s.matchRepo.GetByWeek(week)
-	if err != nil {
-		return nil, err
-	}
-
-	// Process each match
-	for _, match := range matches {
-		if !match.IsPlayed {
-			// Get full team objects
-			homeTeam, err := s.teamRepo.GetByID(int(match.HomeTeamID))
-			if err != nil {
-				return nil, err
-			}
-
-			awayTeam, err := s.teamRepo.GetByID(int(match.AwayTeamID))
-			if err != nil {
-				return nil, err
-			}
-
-			// Simulate match score
-			homeGoals, awayGoals := helpers.SimulateMatchScore(homeTeam.Strength, awayTeam.Strength)
-
-			// Update match with results
-			match.HomeTeamScore = homeGoals
-			match.AwayTeamScore = awayGoals
-			match.IsPlayed = true
-
-			// Update match in database
-			if err := s.matchRepo.Update(&match); err != nil {
-				return nil, err
-			}
-
-			// Update home team stats
-			homeTeam.Stats.GoalsFor += homeGoals
-			homeTeam.Stats.GoalsAgainst += awayGoals
-
-			// Update away team stats
-			awayTeam.Stats.GoalsFor += awayGoals
-			awayTeam.Stats.GoalsAgainst += homeGoals
-
-			// Update points and win/draw/loss records
-			if homeGoals > awayGoals {
-				// Home team wins
-				homeTeam.Stats.Points += 3
-				homeTeam.Stats.Wins++
-				awayTeam.Stats.Losses++
-			} else if homeGoals < awayGoals {
-				// Away team wins
-				awayTeam.Stats.Points += 3
-				awayTeam.Stats.Wins++
-				homeTeam.Stats.Losses++
-			} else {
-				// Draw
-				homeTeam.Stats.Points++
-				awayTeam.Stats.Points++
-				homeTeam.Stats.Draws++
-				awayTeam.Stats.Draws++
-			}
-
-			// Save updated teams
-			if err := s.teamRepo.Update(homeTeam); err != nil {
-				return nil, err
-			}
-			if err := s.teamRepo.Update(awayTeam); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// Get all teams for the league table
+// PlayWeek simulates all matches for a given week
+func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, error) {
+	// Get all teams
 	teams, err := s.teamRepo.GetAll()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Sort teams by points (descending) and goal difference (descending)
-	sort.Slice(teams, func(i, j int) bool {
-		if teams[i].Stats.Points != teams[j].Stats.Points {
-			return teams[i].Stats.Points > teams[j].Stats.Points
-		}
-		// Calculate goal difference on the fly
-		iGoalDiff := teams[i].Stats.GoalsFor - teams[i].Stats.GoalsAgainst
-		jGoalDiff := teams[j].Stats.GoalsFor - teams[j].Stats.GoalsAgainst
-		return iGoalDiff > jGoalDiff
-	})
+	// Get all matches for the week
+	matches, err := s.matchRepo.GetByWeek(week)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return teams, nil
+	// Simulate each match
+	for _, match := range matches {
+		// Find home and away teams
+		var homeTeam, awayTeam *models.Team
+		for i := range teams {
+			if teams[i].ID == match.HomeTeamID {
+				homeTeam = &teams[i]
+			}
+			if teams[i].ID == match.AwayTeamID {
+				awayTeam = &teams[i]
+			}
+		}
+
+		if homeTeam == nil || awayTeam == nil {
+			continue
+		}
+
+		// Simulate match score
+		homeGoals, awayGoals := helpers.SimulateMatchScore(homeTeam.Strength, awayTeam.Strength)
+
+		// Update match result
+		match.HomeTeamScore = homeGoals
+		match.AwayTeamScore = awayGoals
+		match.IsPlayed = true
+
+		// Update match in database
+		if err := s.matchRepo.Update(&match); err != nil {
+			return nil, nil, err
+		}
+
+		// Update team statistics
+		if homeGoals > awayGoals {
+			homeTeam.Stats.Points += 3
+			homeTeam.Stats.Wins++
+			awayTeam.Stats.Losses++
+		} else if homeGoals < awayGoals {
+			awayTeam.Stats.Points += 3
+			awayTeam.Stats.Wins++
+			homeTeam.Stats.Losses++
+		} else {
+			homeTeam.Stats.Points++
+			awayTeam.Stats.Points++
+			homeTeam.Stats.Draws++
+			awayTeam.Stats.Draws++
+		}
+
+		homeTeam.Stats.GoalsFor += homeGoals
+		homeTeam.Stats.GoalsAgainst += awayGoals
+		awayTeam.Stats.GoalsFor += awayGoals
+		awayTeam.Stats.GoalsAgainst += homeGoals
+
+		// Update teams in database
+		if err := s.teamRepo.Update(homeTeam); err != nil {
+			return nil, nil, err
+		}
+		if err := s.teamRepo.Update(awayTeam); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	// Get updated league table
+	leagueTable, err := s.teamRepo.GetAll()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Calculate predictions if we're at week 4 or later
+	var predictions []models.Prediction
+	if week >= 4 {
+		predictions = helpers.CalculatePredictions(leagueTable)
+	}
+
+	return leagueTable, predictions, nil
 }
