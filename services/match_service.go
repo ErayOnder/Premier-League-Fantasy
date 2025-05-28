@@ -10,6 +10,7 @@ type MatchService interface {
 	Create(match *models.Match) error
 	GetAll() ([]models.Match, error)
 	GetByID(id int) (*models.Match, error)
+	GetByWeek(week int) ([]models.Match, error)
 	Update(match *models.Match) error
 	Delete(id int) error
 }
@@ -39,6 +40,11 @@ func (s *matchService) GetAll() ([]models.Match, error) {
 // GetByID retrieves a match by its ID using the repository
 func (s *matchService) GetByID(id int) (*models.Match, error) {
 	return s.repo.GetByID(id)
+}
+
+// GetByWeek retrieves all matches for a specific week using the repository
+func (s *matchService) GetByWeek(week int) ([]models.Match, error) {
+	return s.repo.GetByWeek(week)
 }
 
 // Update modifies an existing match using the repository

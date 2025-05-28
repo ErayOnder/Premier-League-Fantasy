@@ -3,7 +3,6 @@ package services
 import (
 	"insider-league/helpers"
 	"insider-league/models"
-	"insider-league/repository"
 	"sort"
 )
 
@@ -16,28 +15,28 @@ type LeagueService interface {
 
 // leagueService implements the LeagueService interface
 type leagueService struct {
-	teamRepo  repository.TeamRepository
-	matchRepo repository.MatchRepository
+	teamService  TeamService
+	matchService MatchService
 }
 
 // NewLeagueService creates a new instance of leagueService
-func NewLeagueService(teamRepo repository.TeamRepository, matchRepo repository.MatchRepository) LeagueService {
+func NewLeagueService(teamService TeamService, matchService MatchService) LeagueService {
 	return &leagueService{
-		teamRepo:  teamRepo,
-		matchRepo: matchRepo,
+		teamService:  teamService,
+		matchService: matchService,
 	}
 }
 
 // PlayWeek simulates all matches for a given week
 func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, error) {
 	// Get all teams
-	teams, err := s.teamRepo.GetAll()
+	teams, err := s.teamService.GetAll()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Get all matches for the week
-	matches, err := s.matchRepo.GetByWeek(week)
+	matches, err := s.matchService.GetByWeek(week)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -68,42 +67,18 @@ func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, 
 		match.IsPlayed = true
 
 		// Update match in database
-		if err := s.matchRepo.Update(&match); err != nil {
+		if err := s.matchService.Update(&match); err != nil {
 			return nil, nil, err
 		}
 
 		// Update team statistics
-		if homeGoals > awayGoals {
-			homeTeam.Stats.Points += 3
-			homeTeam.Stats.Wins++
-			awayTeam.Stats.Losses++
-		} else if homeGoals < awayGoals {
-			awayTeam.Stats.Points += 3
-			awayTeam.Stats.Wins++
-			homeTeam.Stats.Losses++
-		} else {
-			homeTeam.Stats.Points++
-			awayTeam.Stats.Points++
-			homeTeam.Stats.Draws++
-			awayTeam.Stats.Draws++
-		}
-
-		homeTeam.Stats.GoalsFor += homeGoals
-		homeTeam.Stats.GoalsAgainst += awayGoals
-		awayTeam.Stats.GoalsFor += awayGoals
-		awayTeam.Stats.GoalsAgainst += homeGoals
-
-		// Update teams in database
-		if err := s.teamRepo.Update(homeTeam); err != nil {
-			return nil, nil, err
-		}
-		if err := s.teamRepo.Update(awayTeam); err != nil {
+		if err := s.teamService.UpdateMatchStats(homeTeam, awayTeam, homeGoals, awayGoals, false); err != nil {
 			return nil, nil, err
 		}
 	}
 
 	// Get updated league table
-	leagueTable, err := s.teamRepo.GetAll()
+	leagueTable, err := s.teamService.GetLeagueTable()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +95,7 @@ func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Prediction, 
 // PlayAll simulates all remaining matches in the league
 func (s *leagueService) PlayAll() ([]models.Team, error) {
 	// Get all matches
-	matches, err := s.matchRepo.GetAll()
+	matches, err := s.matchService.GetAll()
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +124,7 @@ func (s *leagueService) PlayAll() ([]models.Team, error) {
 	}
 
 	// Get final league table
-	leagueTable, err := s.teamRepo.GetAll()
+	leagueTable, err := s.teamService.GetLeagueTable()
 	if err != nil {
 		return nil, err
 	}
@@ -160,88 +135,43 @@ func (s *leagueService) PlayAll() ([]models.Team, error) {
 // EditMatchResult updates a match result and recalculates team statistics
 func (s *leagueService) EditMatchResult(matchID int, homeGoals, awayGoals int) (*models.Match, []models.Team, error) {
 	// Get match with preloaded teams
-	match, err := s.matchRepo.GetByID(matchID)
+	match, err := s.matchService.GetByID(matchID)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Get teams
-	homeTeam, err := s.teamRepo.GetByID(int(match.HomeTeamID))
+	homeTeam, err := s.teamService.GetByID(int(match.HomeTeamID))
 	if err != nil {
 		return nil, nil, err
 	}
-	awayTeam, err := s.teamRepo.GetByID(int(match.AwayTeamID))
+	awayTeam, err := s.teamService.GetByID(int(match.AwayTeamID))
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Revert Phase: Undo the effects of the original match result
-	if match.HomeTeamScore > match.AwayTeamScore {
-		// Home team won
-		homeTeam.Stats.Points -= 3
-		homeTeam.Stats.Wins--
-		awayTeam.Stats.Losses--
-	} else if match.HomeTeamScore < match.AwayTeamScore {
-		// Away team won
-		awayTeam.Stats.Points -= 3
-		awayTeam.Stats.Wins--
-		homeTeam.Stats.Losses--
-	} else {
-		// Draw
-		homeTeam.Stats.Points--
-		awayTeam.Stats.Points--
-		homeTeam.Stats.Draws--
-		awayTeam.Stats.Draws--
+	if err := s.teamService.UpdateMatchStats(homeTeam, awayTeam, match.HomeTeamScore, match.AwayTeamScore, true); err != nil {
+		return nil, nil, err
 	}
-
-	// Revert goal statistics
-	homeTeam.Stats.GoalsFor -= match.HomeTeamScore
-	homeTeam.Stats.GoalsAgainst -= match.AwayTeamScore
-	awayTeam.Stats.GoalsFor -= match.AwayTeamScore
-	awayTeam.Stats.GoalsAgainst -= match.HomeTeamScore
 
 	// Apply Phase: Apply the new match result
 	match.HomeTeamScore = homeGoals
 	match.AwayTeamScore = awayGoals
 	match.IsPlayed = true
 
-	if homeGoals > awayGoals {
-		// Home team wins
-		homeTeam.Stats.Points += 3
-		homeTeam.Stats.Wins++
-		awayTeam.Stats.Losses++
-	} else if homeGoals < awayGoals {
-		// Away team wins
-		awayTeam.Stats.Points += 3
-		awayTeam.Stats.Wins++
-		homeTeam.Stats.Losses++
-	} else {
-		// Draw
-		homeTeam.Stats.Points++
-		awayTeam.Stats.Points++
-		homeTeam.Stats.Draws++
-		awayTeam.Stats.Draws++
-	}
-
-	// Update goal statistics
-	homeTeam.Stats.GoalsFor += homeGoals
-	homeTeam.Stats.GoalsAgainst += awayGoals
-	awayTeam.Stats.GoalsFor += awayGoals
-	awayTeam.Stats.GoalsAgainst += homeGoals
-
-	// Save Phase: Update teams and match in database
-	if err := s.teamRepo.Update(homeTeam); err != nil {
-		return nil, nil, err
-	}
-	if err := s.teamRepo.Update(awayTeam); err != nil {
-		return nil, nil, err
-	}
-	if err := s.matchRepo.Update(match); err != nil {
+	// Update match in database
+	if err := s.matchService.Update(match); err != nil {
 		return nil, nil, err
 	}
 
-	// Return Phase: Get updated league table
-	leagueTable, err := s.teamRepo.GetAll()
+	// Update team statistics with new result
+	if err := s.teamService.UpdateMatchStats(homeTeam, awayTeam, homeGoals, awayGoals, false); err != nil {
+		return nil, nil, err
+	}
+
+	// Get updated league table
+	leagueTable, err := s.teamService.GetLeagueTable()
 	if err != nil {
 		return nil, nil, err
 	}
