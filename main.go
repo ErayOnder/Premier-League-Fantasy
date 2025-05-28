@@ -39,7 +39,7 @@ func main() {
 	// Initialize services
 	teamService := services.NewTeamService(teamRepo)
 	matchService := services.NewMatchService(matchRepo)
-	leagueService := services.NewLeagueService(teamRepo, matchRepo)
+	leagueService := services.NewLeagueService(teamService, matchService)
 
 	// Create a new Fiber app
 	app := fiber.New()

@@ -28,37 +28,34 @@ func NewMatchRepository(db *gorm.DB) MatchRepository {
 	}
 }
 
-// GetAll retrieves all matches from the database with their associated teams
+// GetAll retrieves all matches from the database
 func (r *matchRepository) GetAll() ([]models.Match, error) {
 	var matches []models.Match
-	result := r.db.Preload("HomeTeam").Preload("AwayTeam").Find(&matches)
+	result := r.db.Find(&matches)
 	return matches, result.Error
 }
 
-// GetByID retrieves a match by its ID with its associated teams
+// GetByID retrieves a match by its ID
 func (r *matchRepository) GetByID(id int) (*models.Match, error) {
 	var match models.Match
-	result := r.db.Preload("HomeTeam").Preload("AwayTeam").First(&match, id)
+	result := r.db.First(&match, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return &match, nil
 }
 
-// GetByWeek retrieves all matches for a specific week with their associated teams
+// GetByWeek retrieves all matches for a specific week
 func (r *matchRepository) GetByWeek(week int) ([]models.Match, error) {
 	var matches []models.Match
-	result := r.db.Preload("HomeTeam").Preload("AwayTeam").Where("week = ?", week).Find(&matches)
+	result := r.db.Where("week = ?", week).Find(&matches)
 	return matches, result.Error
 }
 
 // Create adds a new match to the database
 func (r *matchRepository) Create(match *models.Match) error {
 	result := r.db.Create(match)
-	if result.Error != nil {
-		return result.Error
-	}
-	return r.db.Preload("HomeTeam").Preload("AwayTeam").First(match, match.ID).Error
+	return result.Error
 }
 
 // Update modifies an existing match in the database
