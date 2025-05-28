@@ -2,12 +2,13 @@ package models
 
 // Stats represents the statistical data for a team
 type Stats struct {
-	Points       int `json:"points" gorm:"column:points"`
-	GoalsFor     int `json:"goals_for" gorm:"column:goals_for"`
-	GoalsAgainst int `json:"goals_against" gorm:"column:goals_against"`
-	Wins         int `json:"wins" gorm:"column:wins"`
-	Draws        int `json:"draws" gorm:"column:draws"`
-	Losses       int `json:"losses" gorm:"column:losses"`
+	Points         int `json:"points" gorm:"column:points"`
+	GoalsFor       int `json:"goals_for" gorm:"column:goals_for"`
+	GoalsAgainst   int `json:"goals_against" gorm:"column:goals_against"`
+	GoalDifference int `json:"goal_difference" gorm:"column:goal_difference"`
+	Wins           int `json:"wins" gorm:"column:wins"`
+	Draws          int `json:"draws" gorm:"column:draws"`
+	Losses         int `json:"losses" gorm:"column:losses"`
 }
 
 // Team represents a football team in the league

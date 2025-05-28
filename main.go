@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"insider-league/db"
+	"insider-league/db/seeds"
 	"insider-league/handlers"
 	"insider-league/repository"
 	"insider-league/services"
@@ -30,6 +31,11 @@ func main() {
 	// Connect to the database
 	if err := db.ConnectDB(); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	// Seed the database
+	if err := seeds.Load(db.DB); err != nil {
+		log.Fatalf("Failed to seed database: %v", err)
 	}
 
 	// Initialize repositories

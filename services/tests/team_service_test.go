@@ -26,20 +26,22 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			awayGoals: 1,
 			revert:    false,
 			expectedHomeStats: models.Stats{
-				Points:       13, // 10 + 3
-				Wins:         3,  // 2 + 1
-				Draws:        1,  // unchanged
-				Losses:       1,  // unchanged
-				GoalsFor:     8,  // 5 + 3
-				GoalsAgainst: 4,  // 3 + 1
+				Points:         13, // 10 + 3
+				Wins:           3,  // 2 + 1
+				Draws:          1,  // unchanged
+				Losses:         1,  // unchanged
+				GoalsFor:       8,  // 5 + 3
+				GoalsAgainst:   4,  // 3 + 1
+				GoalDifference: 4,  // 8 - 4
 			},
 			expectedAwayStats: models.Stats{
-				Points:       6, // 6 + 0
-				Wins:         2, // unchanged
-				Draws:        0, // unchanged
-				Losses:       3, // 2 + 1
-				GoalsFor:     5, // 4 + 1
-				GoalsAgainst: 8, // 5 + 3
+				Points:         6,  // 6 + 0
+				Wins:           2,  // unchanged
+				Draws:          0,  // unchanged
+				Losses:         3,  // 2 + 1
+				GoalsFor:       5,  // 4 + 1
+				GoalsAgainst:   8,  // 5 + 3
+				GoalDifference: -3, // 5 - 8
 			},
 			description: "Home team wins, gets 3 points and 1 win, away team gets 1 loss",
 		},
@@ -49,20 +51,22 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			awayGoals: 2,
 			revert:    false,
 			expectedHomeStats: models.Stats{
-				Points:       10, // 10 + 0
-				Wins:         2,  // unchanged
-				Draws:        1,  // unchanged
-				Losses:       2,  // 1 + 1
-				GoalsFor:     5,  // 5 + 0
-				GoalsAgainst: 5,  // 3 + 2
+				Points:         10, // 10 + 0
+				Wins:           2,  // unchanged
+				Draws:          1,  // unchanged
+				Losses:         2,  // 1 + 1
+				GoalsFor:       5,  // 5 + 0
+				GoalsAgainst:   5,  // 3 + 2
+				GoalDifference: 0,  // 5 - 5
 			},
 			expectedAwayStats: models.Stats{
-				Points:       9, // 6 + 3
-				Wins:         3, // 2 + 1
-				Draws:        0, // unchanged
-				Losses:       2, // unchanged
-				GoalsFor:     6, // 4 + 2
-				GoalsAgainst: 5, // unchanged
+				Points:         9, // 6 + 3
+				Wins:           3, // 2 + 1
+				Draws:          0, // unchanged
+				Losses:         2, // unchanged
+				GoalsFor:       6, // 4 + 2
+				GoalsAgainst:   5, // unchanged
+				GoalDifference: 1, // 6 - 5
 			},
 			description: "Away team wins, gets 3 points and 1 win, home team gets 1 loss",
 		},
@@ -72,20 +76,22 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			awayGoals: 2,
 			revert:    false,
 			expectedHomeStats: models.Stats{
-				Points:       11, // 10 + 1
-				Wins:         2,  // unchanged
-				Draws:        2,  // 1 + 1
-				Losses:       1,  // unchanged
-				GoalsFor:     7,  // 5 + 2
-				GoalsAgainst: 5,  // 3 + 2
+				Points:         11, // 10 + 1
+				Wins:           2,  // unchanged
+				Draws:          2,  // 1 + 1
+				Losses:         1,  // unchanged
+				GoalsFor:       7,  // 5 + 2
+				GoalsAgainst:   5,  // 3 + 2
+				GoalDifference: 2,  // 7 - 5
 			},
 			expectedAwayStats: models.Stats{
-				Points:       7, // 6 + 1
-				Wins:         2, // unchanged
-				Draws:        1, // 0 + 1
-				Losses:       2, // unchanged
-				GoalsFor:     6, // 4 + 2
-				GoalsAgainst: 7, // 5 + 2
+				Points:         7,  // 6 + 1
+				Wins:           2,  // unchanged
+				Draws:          1,  // 0 + 1
+				Losses:         2,  // unchanged
+				GoalsFor:       6,  // 4 + 2
+				GoalsAgainst:   7,  // 5 + 2
+				GoalDifference: -1, // 6 - 7
 			},
 			description: "Draw, both teams get 1 point and 1 draw",
 		},
@@ -95,20 +101,22 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			awayGoals: 1,
 			revert:    true,
 			expectedHomeStats: models.Stats{
-				Points:       7, // 10 - 3
-				Wins:         1, // 2 - 1
-				Draws:        1, // unchanged
-				Losses:       1, // unchanged
-				GoalsFor:     2, // 5 - 3
-				GoalsAgainst: 2, // 3 - 1
+				Points:         7, // 10 - 3
+				Wins:           1, // 2 - 1
+				Draws:          1, // unchanged
+				Losses:         1, // unchanged
+				GoalsFor:       2, // 5 - 3
+				GoalsAgainst:   2, // 3 - 1
+				GoalDifference: 0, // 2 - 2
 			},
 			expectedAwayStats: models.Stats{
-				Points:       6, // 6 - 0
-				Wins:         2, // unchanged
-				Draws:        0, // unchanged
-				Losses:       1, // 2 - 1
-				GoalsFor:     3, // 4 - 1
-				GoalsAgainst: 2, // 5 - 3
+				Points:         6, // 6 - 0
+				Wins:           2, // unchanged
+				Draws:          0, // unchanged
+				Losses:         1, // 2 - 1
+				GoalsFor:       3, // 4 - 1
+				GoalsAgainst:   2, // 5 - 3
+				GoalDifference: 1, // 3 - 2
 			},
 			description: "Reverting home team win, subtracts 3 points and 1 win from home, 1 loss from away",
 		},
@@ -118,20 +126,22 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			awayGoals: 2,
 			revert:    true,
 			expectedHomeStats: models.Stats{
-				Points:       9, // 10 - 1
-				Wins:         2, // unchanged
-				Draws:        0, // 1 - 1
-				Losses:       1, // unchanged
-				GoalsFor:     3, // 5 - 2
-				GoalsAgainst: 1, // 3 - 2
+				Points:         9, // 10 - 1
+				Wins:           2, // unchanged
+				Draws:          0, // 1 - 1
+				Losses:         1, // unchanged
+				GoalsFor:       3, // 5 - 2
+				GoalsAgainst:   1, // 3 - 2
+				GoalDifference: 2, // 3 - 1
 			},
 			expectedAwayStats: models.Stats{
-				Points:       5,  // 6 - 1
-				Wins:         2,  // unchanged
-				Draws:        -1, // 0 - 1
-				Losses:       2,  // unchanged
-				GoalsFor:     2,  // 4 - 2
-				GoalsAgainst: 3,  // 5 - 2
+				Points:         5,  // 6 - 1
+				Wins:           2,  // unchanged
+				Draws:          -1, // 0 - 1
+				Losses:         2,  // unchanged
+				GoalsFor:       2,  // 4 - 2
+				GoalsAgainst:   3,  // 5 - 2
+				GoalDifference: -1, // 2 - 3
 			},
 			description: "Reverting draw, subtracts 1 point and 1 draw from both teams",
 		},

@@ -116,6 +116,10 @@ func (s *teamService) UpdateMatchStats(homeTeam, awayTeam *models.Team, homeGoal
 	awayTeam.Stats.GoalsFor += awayGoals * multiplier
 	awayTeam.Stats.GoalsAgainst += homeGoals * multiplier
 
+	// Update goal difference
+	homeTeam.Stats.GoalDifference = homeTeam.Stats.GoalsFor - homeTeam.Stats.GoalsAgainst
+	awayTeam.Stats.GoalDifference = awayTeam.Stats.GoalsFor - awayTeam.Stats.GoalsAgainst
+
 	// Update teams in database
 	if err := s.repo.Update(homeTeam); err != nil {
 		return err
