@@ -58,3 +58,47 @@ func (h *LeagueHandler) PlayAll(c *fiber.Ctx) error {
 		"league_table": leagueTable,
 	})
 }
+
+// EditMatchResult handles updating a match result
+func (h *LeagueHandler) EditMatchResult(c *fiber.Ctx) error {
+	// Get match ID from URL parameters
+	matchID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid match ID",
+		})
+	}
+
+	// Parse request body
+	type updateScoreRequest struct {
+		HomeGoals int `json:"home_goals"`
+		AwayGoals int `json:"away_goals"`
+	}
+
+	var req updateScoreRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate scores
+	if req.HomeGoals < 0 || req.AwayGoals < 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Scores cannot be negative",
+		})
+	}
+
+	// Update match result
+	match, leagueTable, err := h.service.EditMatchResult(matchID, req.HomeGoals, req.AwayGoals)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"match":        match,
+		"league_table": leagueTable,
+	})
+}

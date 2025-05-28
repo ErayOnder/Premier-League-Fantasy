@@ -75,6 +75,7 @@ func main() {
 	leagueHandler := handlers.NewLeagueHandler(leagueService)
 	league.Get("/play/:week", leagueHandler.PlayWeek)
 	league.Get("/play-all", leagueHandler.PlayAll)
+	league.Put("/edit-match/:id", leagueHandler.EditMatchResult)
 
 	// Start the server
 	port := os.Getenv("SERVER_PORT")

@@ -11,6 +11,7 @@ import (
 type LeagueService interface {
 	PlayWeek(week int) ([]models.Team, []models.Prediction, error)
 	PlayAll() ([]models.Team, error)
+	EditMatchResult(matchID int, homeGoals, awayGoals int) (*models.Match, []models.Team, error)
 }
 
 // leagueService implements the LeagueService interface
@@ -154,4 +155,96 @@ func (s *leagueService) PlayAll() ([]models.Team, error) {
 	}
 
 	return leagueTable, nil
+}
+
+// EditMatchResult updates a match result and recalculates team statistics
+func (s *leagueService) EditMatchResult(matchID int, homeGoals, awayGoals int) (*models.Match, []models.Team, error) {
+	// Get match with preloaded teams
+	match, err := s.matchRepo.GetByID(matchID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Get teams
+	homeTeam, err := s.teamRepo.GetByID(int(match.HomeTeamID))
+	if err != nil {
+		return nil, nil, err
+	}
+	awayTeam, err := s.teamRepo.GetByID(int(match.AwayTeamID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Revert Phase: Undo the effects of the original match result
+	if match.HomeTeamScore > match.AwayTeamScore {
+		// Home team won
+		homeTeam.Stats.Points -= 3
+		homeTeam.Stats.Wins--
+		awayTeam.Stats.Losses--
+	} else if match.HomeTeamScore < match.AwayTeamScore {
+		// Away team won
+		awayTeam.Stats.Points -= 3
+		awayTeam.Stats.Wins--
+		homeTeam.Stats.Losses--
+	} else {
+		// Draw
+		homeTeam.Stats.Points--
+		awayTeam.Stats.Points--
+		homeTeam.Stats.Draws--
+		awayTeam.Stats.Draws--
+	}
+
+	// Revert goal statistics
+	homeTeam.Stats.GoalsFor -= match.HomeTeamScore
+	homeTeam.Stats.GoalsAgainst -= match.AwayTeamScore
+	awayTeam.Stats.GoalsFor -= match.AwayTeamScore
+	awayTeam.Stats.GoalsAgainst -= match.HomeTeamScore
+
+	// Apply Phase: Apply the new match result
+	match.HomeTeamScore = homeGoals
+	match.AwayTeamScore = awayGoals
+	match.IsPlayed = true
+
+	if homeGoals > awayGoals {
+		// Home team wins
+		homeTeam.Stats.Points += 3
+		homeTeam.Stats.Wins++
+		awayTeam.Stats.Losses++
+	} else if homeGoals < awayGoals {
+		// Away team wins
+		awayTeam.Stats.Points += 3
+		awayTeam.Stats.Wins++
+		homeTeam.Stats.Losses++
+	} else {
+		// Draw
+		homeTeam.Stats.Points++
+		awayTeam.Stats.Points++
+		homeTeam.Stats.Draws++
+		awayTeam.Stats.Draws++
+	}
+
+	// Update goal statistics
+	homeTeam.Stats.GoalsFor += homeGoals
+	homeTeam.Stats.GoalsAgainst += awayGoals
+	awayTeam.Stats.GoalsFor += awayGoals
+	awayTeam.Stats.GoalsAgainst += homeGoals
+
+	// Save Phase: Update teams and match in database
+	if err := s.teamRepo.Update(homeTeam); err != nil {
+		return nil, nil, err
+	}
+	if err := s.teamRepo.Update(awayTeam); err != nil {
+		return nil, nil, err
+	}
+	if err := s.matchRepo.Update(match); err != nil {
+		return nil, nil, err
+	}
+
+	// Return Phase: Get updated league table
+	leagueTable, err := s.teamRepo.GetAll()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return match, leagueTable, nil
 }
