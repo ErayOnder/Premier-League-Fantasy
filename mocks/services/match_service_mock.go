@@ -49,3 +49,9 @@ func (m *MockMatchService) Delete(id int) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
+
+// GetUnplayedWeeks mocks the GetUnplayedWeeks method
+func (m *MockMatchService) GetUnplayedWeeks() ([]int, error) {
+	args := m.Called()
+	return args.Get(0).([]int), args.Error(1)
+}

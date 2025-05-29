@@ -51,5 +51,11 @@ func (m *MockMatchRepository) Delete(id int) error {
 	return args.Error(0)
 }
 
+// GetUnplayedWeeks mocks the GetUnplayedWeeks method
+func (m *MockMatchRepository) GetUnplayedWeeks() ([]int, error) {
+	args := m.Called()
+	return args.Get(0).([]int), args.Error(1)
+}
+
 // Ensure MockMatchRepository implements repository.MatchRepository
 var _ repository.MatchRepository = (*MockMatchRepository)(nil)

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestTeamService_UpdateMatchStats(t *testing.T) {
+func TestTeamService_UpdateTeamStats(t *testing.T) {
 	tests := []struct {
 		name              string
 		homeGoals         int
@@ -195,7 +195,7 @@ func TestTeamService_UpdateMatchStats(t *testing.T) {
 			err := service.UpdateTeamStats(homeTeam, awayTeam, tt.homeGoals, tt.awayGoals, tt.revert)
 
 			// Assertions
-			assert.NoError(t, err, "UpdateMatchStats should not return an error")
+			assert.NoError(t, err, "UpdateTeamStats should not return an error")
 			assert.Equal(t, tt.expectedHomeStats, homeTeam.Stats, "Home team stats should match expected values")
 			assert.Equal(t, tt.expectedAwayStats, awayTeam.Stats, "Away team stats should match expected values")
 
@@ -289,5 +289,186 @@ func TestTeamService_GetTeamRankings(t *testing.T) {
 	}
 
 	// Verify that the mock was called as expected
+	mockRepo.AssertExpectations(t)
+}
+
+func TestTeamService_Create(t *testing.T) {
+	// Create mock repository
+	mockRepo := new(repomocks.MockTeamRepository)
+
+	// Create team service with mock
+	service := services.NewTeamService(mockRepo)
+
+	// Test data
+	newTeam := &models.Team{
+		Name:     "New Team",
+		Strength: 75,
+		Stats: models.Stats{
+			Points:         0,
+			Wins:           0,
+			Draws:          0,
+			Losses:         0,
+			GoalsFor:       0,
+			GoalsAgainst:   0,
+			GoalDifference: 0,
+		},
+	}
+
+	// Set up mock expectations
+	mockRepo.On("Create", newTeam).Return(nil).Once()
+
+	// Call the function under test
+	err := service.Create(newTeam)
+
+	// Assertions
+	assert.NoError(t, err, "Create should not return an error")
+
+	// Verify that all expected calls were made
+	mockRepo.AssertExpectations(t)
+}
+
+func TestTeamService_GetAll(t *testing.T) {
+	// Create mock repository
+	mockRepo := new(repomocks.MockTeamRepository)
+
+	// Create team service with mock
+	service := services.NewTeamService(mockRepo)
+
+	// Expected teams
+	expectedTeams := []models.Team{
+		{
+			ID:       1,
+			Name:     "Team A",
+			Strength: 80,
+			Stats: models.Stats{
+				Points:       15,
+				Wins:         5,
+				Draws:        0,
+				Losses:       0,
+				GoalsFor:     12,
+				GoalsAgainst: 3,
+			},
+		},
+		{
+			ID:       2,
+			Name:     "Team B",
+			Strength: 75,
+			Stats: models.Stats{
+				Points:       12,
+				Wins:         4,
+				Draws:        0,
+				Losses:       1,
+				GoalsFor:     10,
+				GoalsAgainst: 5,
+			},
+		},
+	}
+
+	// Set up mock expectations
+	mockRepo.On("GetAll").Return(expectedTeams, nil).Once()
+
+	// Call the function under test
+	teams, err := service.GetAll()
+
+	// Assertions
+	assert.NoError(t, err, "GetAll should not return an error")
+	assert.Equal(t, expectedTeams, teams, "Teams should match expected")
+
+	// Verify that all expected calls were made
+	mockRepo.AssertExpectations(t)
+}
+
+func TestTeamService_GetByID(t *testing.T) {
+	// Create mock repository
+	mockRepo := new(repomocks.MockTeamRepository)
+
+	// Create team service with mock
+	service := services.NewTeamService(mockRepo)
+
+	// Test data
+	teamID := 1
+	expectedTeam := &models.Team{
+		ID:       1,
+		Name:     "Team A",
+		Strength: 80,
+		Stats: models.Stats{
+			Points:       15,
+			Wins:         5,
+			Draws:        0,
+			Losses:       0,
+			GoalsFor:     12,
+			GoalsAgainst: 3,
+		},
+	}
+
+	// Set up mock expectations
+	mockRepo.On("GetByID", teamID).Return(expectedTeam, nil).Once()
+
+	// Call the function under test
+	team, err := service.GetByID(teamID)
+
+	// Assertions
+	assert.NoError(t, err, "GetByID should not return an error")
+	assert.Equal(t, expectedTeam, team, "Team should match expected")
+
+	// Verify that all expected calls were made
+	mockRepo.AssertExpectations(t)
+}
+
+func TestTeamService_Update(t *testing.T) {
+	// Create mock repository
+	mockRepo := new(repomocks.MockTeamRepository)
+
+	// Create team service with mock
+	service := services.NewTeamService(mockRepo)
+
+	// Test data
+	updatedTeam := &models.Team{
+		ID:       1,
+		Name:     "Updated Team",
+		Strength: 85,
+		Stats: models.Stats{
+			Points:       18,
+			Wins:         6,
+			Draws:        0,
+			Losses:       0,
+			GoalsFor:     15,
+			GoalsAgainst: 3,
+		},
+	}
+
+	// Set up mock expectations
+	mockRepo.On("Update", updatedTeam).Return(nil).Once()
+
+	// Call the function under test
+	err := service.Update(updatedTeam)
+
+	// Assertions
+	assert.NoError(t, err, "Update should not return an error")
+
+	// Verify that all expected calls were made
+	mockRepo.AssertExpectations(t)
+}
+
+func TestTeamService_Delete(t *testing.T) {
+	// Create mock repository
+	mockRepo := new(repomocks.MockTeamRepository)
+
+	// Create team service with mock
+	service := services.NewTeamService(mockRepo)
+
+	// Test data
+	teamID := 1
+
+	// Set up mock expectations
+	mockRepo.On("Delete", teamID).Return(nil).Once()
+
+	// Call the function under test
+	err := service.Delete(teamID)
+
+	// Assertions
+	assert.NoError(t, err, "Delete should not return an error")
+
+	// Verify that all expected calls were made
 	mockRepo.AssertExpectations(t)
 }

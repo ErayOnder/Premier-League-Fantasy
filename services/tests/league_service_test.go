@@ -99,7 +99,7 @@ func TestLeagueService_EditMatchResult(t *testing.T) {
 	mockTeamService.AssertExpectations(t)
 }
 
-func TestLeagueService_PlayWeek(t *testing.T) {
+func TestLeagueService_PlayWeeks_NextWeek(t *testing.T) {
 	tests := []struct {
 		name                   string
 		week                   int
@@ -200,6 +200,7 @@ func TestLeagueService_PlayWeek(t *testing.T) {
 			expectedLeagueTable := []models.Team{homeTeam, awayTeam}
 
 			// Set up mock expectations
+			mockMatchService.On("GetUnplayedWeeks").Return([]int{tt.week}, nil).Once()
 			mockMatchService.On("GetByWeek", tt.week).Return(matches, nil).Once()
 
 			// For each match, expect Update to be called
@@ -227,11 +228,11 @@ func TestLeagueService_PlayWeek(t *testing.T) {
 			// Expect GetTeamRankings to be called
 			mockTeamService.On("GetTeamRankings").Return(expectedLeagueTable, nil).Once()
 
-			// Call the function under test
-			leagueTable, returnedMatches, predictions, err := service.PlayWeek(tt.week)
+			// Call the function under test - play only next week
+			leagueTable, returnedMatches, predictions, err := service.PlayWeeks(false)
 
 			// Assertions
-			assert.NoError(t, err, "PlayWeek should not return an error")
+			assert.NoError(t, err, "PlayWeeks should not return an error")
 			assert.Equal(t, expectedLeagueTable, leagueTable, "League table should match expected")
 			assert.NotNil(t, returnedMatches, "Returned matches should not be nil")
 			assert.Len(t, returnedMatches, len(matches), "Should return all matches for the week")
@@ -251,7 +252,7 @@ func TestLeagueService_PlayWeek(t *testing.T) {
 	}
 }
 
-func TestLeagueService_PlayWeek_AlreadyPlayed(t *testing.T) {
+func TestLeagueService_PlayWeeks_NoUnplayedWeeks(t *testing.T) {
 	// Create mock services
 	mockTeamService := new(servicemocks.MockTeamService)
 	mockMatchService := new(servicemocks.MockMatchService)
@@ -259,63 +260,237 @@ func TestLeagueService_PlayWeek_AlreadyPlayed(t *testing.T) {
 	// Create league service with mocks
 	service := services.NewLeagueService(mockTeamService, mockMatchService)
 
-	week := 1
-
-	// Create sample teams
-	homeTeam := models.Team{
-		ID:       1,
-		Name:     "Team A",
-		Strength: 80,
+	// Expected league table when no unplayed weeks remain
+	expectedLeagueTable := []models.Team{
+		{
+			ID:   1,
+			Name: "Team A",
+			Stats: models.Stats{
+				Points:       15,
+				Wins:         5,
+				Draws:        0,
+				Losses:       0,
+				GoalsFor:     12,
+				GoalsAgainst: 3,
+			},
+		},
+		{
+			ID:   2,
+			Name: "Team B",
+			Stats: models.Stats{
+				Points:       12,
+				Wins:         4,
+				Draws:        0,
+				Losses:       1,
+				GoalsFor:     10,
+				GoalsAgainst: 5,
+			},
+		},
 	}
 
-	awayTeam := models.Team{
-		ID:       2,
-		Name:     "Team B",
-		Strength: 75,
+	// Set up mock expectations - return empty slice for no unplayed weeks
+	mockMatchService.On("GetUnplayedWeeks").Return([]int{}, nil).Once()
+	mockTeamService.On("GetTeamRankings").Return(expectedLeagueTable, nil).Once()
+
+	// Call the function under test
+	leagueTable, returnedMatches, predictions, err := service.PlayWeeks(false)
+
+	// Assertions - should NOT return an error, but return current state
+	assert.NoError(t, err, "PlayWeeks should not return an error when no unplayed weeks remain")
+	assert.Equal(t, expectedLeagueTable, leagueTable, "League table should match expected")
+	assert.NotNil(t, returnedMatches, "Returned matches should not be nil")
+	assert.Empty(t, returnedMatches, "Returned matches should be empty when no unplayed weeks")
+	assert.NotNil(t, predictions, "Predictions should not be nil")
+	assert.Empty(t, predictions, "Predictions should be empty when no unplayed weeks")
+
+	// Verify that the expected calls were made
+	mockMatchService.AssertExpectations(t)
+	mockTeamService.AssertExpectations(t)
+}
+
+func TestLeagueService_GetLeagueTable(t *testing.T) {
+	// Create mock services
+	mockTeamService := new(servicemocks.MockTeamService)
+	mockMatchService := new(servicemocks.MockMatchService)
+
+	// Create league service with mocks
+	service := services.NewLeagueService(mockTeamService, mockMatchService)
+
+	// Expected league table
+	expectedLeagueTable := []models.Team{
+		{
+			ID:   1,
+			Name: "Team A",
+			Stats: models.Stats{
+				Points:       15,
+				Wins:         5,
+				Draws:        0,
+				Losses:       0,
+				GoalsFor:     12,
+				GoalsAgainst: 3,
+			},
+		},
+		{
+			ID:   2,
+			Name: "Team B",
+			Stats: models.Stats{
+				Points:       12,
+				Wins:         4,
+				Draws:        0,
+				Losses:       1,
+				GoalsFor:     10,
+				GoalsAgainst: 5,
+			},
+		},
 	}
 
-	// Create sample already played matches for the week
-	matches := []models.Match{
+	// Set up mock expectations
+	mockTeamService.On("GetTeamRankings").Return(expectedLeagueTable, nil).Once()
+
+	// Call the function under test
+	leagueTable, err := service.GetLeagueTable()
+
+	// Assertions
+	assert.NoError(t, err, "GetLeagueTable should not return an error")
+	assert.Equal(t, expectedLeagueTable, leagueTable, "League table should match expected")
+
+	// Verify that the expected calls were made
+	mockTeamService.AssertExpectations(t)
+	mockMatchService.AssertExpectations(t)
+}
+
+func TestLeagueService_GetWeekResults(t *testing.T) {
+	// Create mock services
+	mockTeamService := new(servicemocks.MockTeamService)
+	mockMatchService := new(servicemocks.MockMatchService)
+
+	// Create league service with mocks
+	service := services.NewLeagueService(mockTeamService, mockMatchService)
+
+	// Test data
+	week := 3
+	expectedMatches := []models.Match{
 		{
 			ID:            1,
-			Week:          week,
+			Week:          3,
 			HomeTeamID:    1,
 			AwayTeamID:    2,
 			HomeTeamScore: 2,
 			AwayTeamScore: 1,
-			IsPlayed:      true, // Already played
-			HomeTeam:      homeTeam,
-			AwayTeam:      awayTeam,
+			IsPlayed:      true,
 		},
 		{
 			ID:            2,
-			Week:          week,
-			HomeTeamID:    2,
-			AwayTeamID:    1,
+			Week:          3,
+			HomeTeamID:    3,
+			AwayTeamID:    4,
 			HomeTeamScore: 0,
 			AwayTeamScore: 3,
-			IsPlayed:      true, // Already played
-			HomeTeam:      awayTeam,
-			AwayTeam:      homeTeam,
+			IsPlayed:      true,
 		},
 	}
 
-	// Set up mock expectations - only GetByWeek should be called
-	mockMatchService.On("GetByWeek", week).Return(matches, nil).Once()
+	// Set up mock expectations
+	mockMatchService.On("GetByWeek", week).Return(expectedMatches, nil).Once()
 
 	// Call the function under test
-	leagueTable, returnedMatches, predictions, err := service.PlayWeek(week)
+	matches, err := service.GetWeekResults(week)
 
 	// Assertions
-	assert.NoError(t, err, "PlayWeek should not return an error")
-	assert.Nil(t, leagueTable, "League table should be nil when week is already played")
-	assert.Nil(t, predictions, "Predictions should be nil when week is already played")
-	assert.NotNil(t, returnedMatches, "Returned matches should not be nil")
-	assert.Len(t, returnedMatches, len(matches), "Should return all matches for the week")
-	assert.True(t, returnedMatches[0].IsPlayed, "Returned matches should be marked as played")
-	assert.True(t, returnedMatches[1].IsPlayed, "Returned matches should be marked as played")
+	assert.NoError(t, err, "GetWeekResults should not return an error")
+	assert.Equal(t, expectedMatches, matches, "Matches should match expected")
 
-	// Verify that only GetByWeek was called, no other service methods
+	// Verify that the expected calls were made
+	mockMatchService.AssertExpectations(t)
+	mockTeamService.AssertExpectations(t)
+}
+
+func TestLeagueService_ResetLeague(t *testing.T) {
+	// Create mock services
+	mockTeamService := new(servicemocks.MockTeamService)
+	mockMatchService := new(servicemocks.MockMatchService)
+
+	// Create league service with mocks
+	service := services.NewLeagueService(mockTeamService, mockMatchService)
+
+	// Mock data - existing matches with played results
+	existingMatches := []models.Match{
+		{
+			ID:            1,
+			Week:          1,
+			HomeTeamID:    1,
+			AwayTeamID:    2,
+			HomeTeamScore: 2,
+			AwayTeamScore: 1,
+			IsPlayed:      true,
+		},
+		{
+			ID:            2,
+			Week:          1,
+			HomeTeamID:    3,
+			AwayTeamID:    4,
+			HomeTeamScore: 1,
+			AwayTeamScore: 0,
+			IsPlayed:      true,
+		},
+	}
+
+	// Mock data - existing teams with stats
+	existingTeams := []models.Team{
+		{
+			ID:   1,
+			Name: "Team A",
+			Stats: models.Stats{
+				Points:       15,
+				Wins:         5,
+				Draws:        0,
+				Losses:       0,
+				GoalsFor:     12,
+				GoalsAgainst: 3,
+			},
+		},
+		{
+			ID:   2,
+			Name: "Team B",
+			Stats: models.Stats{
+				Points:       12,
+				Wins:         4,
+				Draws:        0,
+				Losses:       1,
+				GoalsFor:     10,
+				GoalsAgainst: 5,
+			},
+		},
+	}
+
+	// Set up mock expectations
+	mockMatchService.On("GetAll").Return(existingMatches, nil).Once()
+	mockTeamService.On("GetAll").Return(existingTeams, nil).Once()
+
+	// Expect Update to be called for each match (reset to unplayed state)
+	for _, match := range existingMatches {
+		mockMatchService.On("Update", mock.MatchedBy(func(m *models.Match) bool {
+			return m.ID == match.ID && m.HomeTeamScore == 0 && m.AwayTeamScore == 0 && m.IsPlayed == false
+		})).Return(nil).Once()
+	}
+
+	// Expect Update to be called for each team (reset stats)
+	for _, team := range existingTeams {
+		mockTeamService.On("Update", mock.MatchedBy(func(t *models.Team) bool {
+			return t.ID == team.ID &&
+				t.Stats.Points == 0 && t.Stats.Wins == 0 && t.Stats.Draws == 0 &&
+				t.Stats.Losses == 0 && t.Stats.GoalsFor == 0 && t.Stats.GoalsAgainst == 0 &&
+				t.Stats.GoalDifference == 0
+		})).Return(nil).Once()
+	}
+
+	// Call the function under test
+	err := service.ResetLeague()
+
+	// Assertions
+	assert.NoError(t, err, "ResetLeague should not return an error")
+
+	// Verify that all expected calls were made
 	mockMatchService.AssertExpectations(t)
 	mockTeamService.AssertExpectations(t)
 }
