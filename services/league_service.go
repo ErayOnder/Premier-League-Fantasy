@@ -3,16 +3,15 @@ package services
 import (
 	"insider-league/helpers"
 	"insider-league/models"
-	"sort"
 )
 
 // LeagueService defines the interface for league-related operations
 type LeagueService interface {
-	PlayWeek(week int) ([]models.Team, []models.Match, []models.Prediction, error)
-	PlayAll() ([]models.Team, error)
+	GetLeagueTable() ([]models.Team, error)
+	PlayWeeks(playAll bool) ([]models.Team, []models.Match, []models.Prediction, error)
+	GetWeekResults(week int) ([]models.Match, error)
 	EditMatchResult(matchID int, homeGoals, awayGoals int) (*models.Match, []models.Team, error)
 	ResetLeague() error
-	GetLeagueTable() ([]models.Team, error)
 }
 
 // leagueService implements the LeagueService interface
@@ -34,52 +33,71 @@ func (s *leagueService) GetLeagueTable() ([]models.Team, error) {
 	return s.teamService.GetTeamRankings()
 }
 
-// PlayWeek simulates all matches for a given week
-func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Match, []models.Prediction, error) {
-	// Get all matches for the week (with preloaded teams)
-	matches, err := s.matchService.GetByWeek(week)
+// PlayWeeks simulates weeks based on the playAll parameter
+// If playAll is false, it plays only the next unplayed week
+// If playAll is true, it plays all remaining unplayed weeks
+func (s *leagueService) PlayWeeks(playAll bool) ([]models.Team, []models.Match, []models.Prediction, error) {
+	// Get all unplayed weeks sorted
+	unplayedWeeks, err := s.matchService.GetUnplayedWeeks()
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	// Check if any matches are already played
-	weekAlreadyPlayed := false
-	for _, match := range matches {
-		if match.IsPlayed {
-			weekAlreadyPlayed = true
+	// If no unplayed weeks found, return current league table
+	if len(unplayedWeeks) == 0 {
+		leagueTable, err := s.teamService.GetTeamRankings()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return leagueTable, []models.Match{}, []models.Prediction{}, nil
+	}
+
+	var allMatches []models.Match
+	var currentWeek int
+
+	// Loop through unplayed weeks
+	for _, week := range unplayedWeeks {
+		currentWeek = week
+
+		// Get matches for the current week
+		weekMatches, err := s.matchService.GetByWeek(week)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		// Simulate each match in the week
+		for i := range weekMatches {
+			match := &weekMatches[i]
+
+			// Use the preloaded teams
+			homeTeam := &match.HomeTeam
+			awayTeam := &match.AwayTeam
+
+			// Simulate match score
+			homeGoals, awayGoals := helpers.SimulateMatchScore(homeTeam.Strength, awayTeam.Strength)
+
+			// Update match result
+			match.HomeTeamScore = homeGoals
+			match.AwayTeamScore = awayGoals
+			match.IsPlayed = true
+
+			// Update match in database
+			if err := s.matchService.Update(match); err != nil {
+				return nil, nil, nil, err
+			}
+
+			// Update team statistics
+			if err := s.teamService.UpdateTeamStats(homeTeam, awayTeam, homeGoals, awayGoals, false); err != nil {
+				return nil, nil, nil, err
+			}
+		}
+
+		// Add week matches to all matches
+		allMatches = append(allMatches, weekMatches...)
+
+		// If not playing all weeks, break after first week
+		if !playAll {
 			break
-		}
-	}
-
-	// If week is already played, return just the match results
-	if weekAlreadyPlayed {
-		return nil, matches, nil, nil
-	}
-
-	// Simulate each match
-	for i := range matches {
-		match := &matches[i]
-
-		// Use the preloaded teams
-		homeTeam := &match.HomeTeam
-		awayTeam := &match.AwayTeam
-
-		// Simulate match score
-		homeGoals, awayGoals := helpers.SimulateMatchScore(homeTeam.Strength, awayTeam.Strength)
-
-		// Update match result
-		match.HomeTeamScore = homeGoals
-		match.AwayTeamScore = awayGoals
-		match.IsPlayed = true
-
-		// Update match in database
-		if err := s.matchService.Update(match); err != nil {
-			return nil, nil, nil, err
-		}
-
-		// Update team statistics
-		if err := s.teamService.UpdateTeamStats(homeTeam, awayTeam, homeGoals, awayGoals, false); err != nil {
-			return nil, nil, nil, err
 		}
 	}
 
@@ -91,51 +109,21 @@ func (s *leagueService) PlayWeek(week int) ([]models.Team, []models.Match, []mod
 
 	// Calculate predictions if we're at week 4 or later
 	var predictions []models.Prediction
-	if week >= 4 {
-		predictions = helpers.CalculatePredictions(leagueTable)
+	if currentWeek >= 4 {
+		predictions = helpers.CalculatePredictions(leagueTable, currentWeek)
 	}
 
-	return leagueTable, matches, predictions, nil
+	return leagueTable, allMatches, predictions, nil
 }
 
-// PlayAll simulates all remaining matches in the league
-func (s *leagueService) PlayAll() ([]models.Team, error) {
-	// Get all matches
-	matches, err := s.matchService.GetAll()
+// GetWeekResults retrieves the results for a specific week
+func (s *leagueService) GetWeekResults(week int) ([]models.Match, error) {
+	matches, err := s.matchService.GetByWeek(week)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a map to track unique weeks
-	weekMap := make(map[int]bool)
-	for _, match := range matches {
-		if !match.IsPlayed {
-			weekMap[match.Week] = true
-		}
-	}
-
-	// Convert map to sorted slice of weeks
-	weeks := make([]int, 0, len(weekMap))
-	for week := range weekMap {
-		weeks = append(weeks, week)
-	}
-	sort.Ints(weeks)
-
-	// Play each week in order
-	for _, week := range weeks {
-		_, _, _, err := s.PlayWeek(week)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Get final league table
-	leagueTable, err := s.teamService.GetTeamRankings()
-	if err != nil {
-		return nil, err
-	}
-
-	return leagueTable, nil
+	return matches, nil
 }
 
 // EditMatchResult updates a match result and recalculates team statistics

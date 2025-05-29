@@ -11,6 +11,7 @@ type MatchRepository interface {
 	GetAll() ([]models.Match, error)
 	GetByID(id int) (*models.Match, error)
 	GetByWeek(week int) ([]models.Match, error)
+	GetUnplayedWeeks() ([]int, error)
 	Create(match *models.Match) error
 	Update(match *models.Match) error
 	Delete(id int) error
@@ -50,6 +51,17 @@ func (r *matchRepository) GetByWeek(week int) ([]models.Match, error) {
 	var matches []models.Match
 	result := r.db.Preload("HomeTeam").Preload("AwayTeam").Where("week = ?", week).Find(&matches)
 	return matches, result.Error
+}
+
+// GetUnplayedWeeks retrieves all unplayed weeks sorted in ascending order
+func (r *matchRepository) GetUnplayedWeeks() ([]int, error) {
+	var weeks []int
+	err := r.db.Model(&models.Match{}).
+		Where("is_played = ?", false).
+		Distinct("week").
+		Order("week ASC").
+		Pluck("week", &weeks).Error
+	return weeks, err
 }
 
 // Create adds a new match to the database

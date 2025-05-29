@@ -11,6 +11,7 @@ type MatchService interface {
 	GetAll() ([]models.Match, error)
 	GetByID(id int) (*models.Match, error)
 	GetByWeek(week int) ([]models.Match, error)
+	GetUnplayedWeeks() ([]int, error)
 	Update(match *models.Match) error
 	Delete(id int) error
 }
@@ -45,6 +46,11 @@ func (s *matchService) GetByID(id int) (*models.Match, error) {
 // GetByWeek retrieves all matches for a specific week using the repository
 func (s *matchService) GetByWeek(week int) ([]models.Match, error) {
 	return s.repo.GetByWeek(week)
+}
+
+// GetUnplayedWeeks retrieves all unplayed weeks sorted
+func (s *matchService) GetUnplayedWeeks() ([]int, error) {
+	return s.repo.GetUnplayedWeeks()
 }
 
 // Update modifies an existing match using the repository

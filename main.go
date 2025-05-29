@@ -80,8 +80,9 @@ func main() {
 	league := api.Group("/league")
 	leagueHandler := handlers.NewLeagueHandler(leagueService)
 	league.Get("/", leagueHandler.GetLeagueTable)
-	league.Get("/play/:week", leagueHandler.PlayWeek)
+	league.Get("/play", leagueHandler.PlayNextWeek)
 	league.Get("/play-all", leagueHandler.PlayAll)
+	league.Get("/week/:id", leagueHandler.GetWeekResults)
 	league.Put("/edit-match/:id", leagueHandler.EditMatchResult)
 	league.Post("/reset", leagueHandler.ResetLeague)
 

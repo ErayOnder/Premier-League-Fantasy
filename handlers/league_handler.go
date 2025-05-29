@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"insider-league/services"
 	"strconv"
 
@@ -20,30 +19,27 @@ func NewLeagueHandler(service services.LeagueService) *LeagueHandler {
 	}
 }
 
-// PlayWeek handles simulating all matches for a given week
-func (h *LeagueHandler) PlayWeek(c *fiber.Ctx) error {
-	// Get and parse the week parameter
-	weekStr := c.Params("week")
-	week, err := strconv.Atoi(weekStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid week number",
-		})
-	}
-
-	// Play the week's matches
-	teams, matches, predictions, err := h.service.PlayWeek(week)
+// GetLeagueTable retrieves the current league table
+func (h *LeagueHandler) GetLeagueTable(c *fiber.Ctx) error {
+	teams, err := h.service.GetLeagueTable()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	// If teams is nil, it means the week was already played
-	if teams == nil {
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"message": fmt.Sprintf("Week %d has already been played", week),
-			"matches": matches,
+	return c.JSON(fiber.Map{
+		"teams": teams,
+	})
+}
+
+// PlayNextWeek handles simulating the next unplayed week
+func (h *LeagueHandler) PlayNextWeek(c *fiber.Ctx) error {
+	// Play only the next week
+	teams, matches, predictions, err := h.service.PlayWeeks(false)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
 		})
 	}
 
@@ -56,8 +52,8 @@ func (h *LeagueHandler) PlayWeek(c *fiber.Ctx) error {
 
 // PlayAll handles simulating all remaining matches in the league
 func (h *LeagueHandler) PlayAll(c *fiber.Ctx) error {
-	// Play all remaining matches
-	leagueTable, err := h.service.PlayAll()
+	// Play all remaining weeks
+	teams, matches, predictions, err := h.service.PlayWeeks(true)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -65,7 +61,33 @@ func (h *LeagueHandler) PlayAll(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"league_table": leagueTable,
+		"league_table": teams,
+		"matches":      matches,
+		"predictions":  predictions,
+	})
+}
+
+// GetWeekResults handles retrieving results for a specific week
+func (h *LeagueHandler) GetWeekResults(c *fiber.Ctx) error {
+	// Get and parse the week parameter
+	weekStr := c.Params("id")
+	week, err := strconv.Atoi(weekStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid week number",
+		})
+	}
+
+	// Get week results
+	matches, err := h.service.GetWeekResults(week)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"matches": matches,
 	})
 }
 
@@ -123,19 +145,5 @@ func (h *LeagueHandler) ResetLeague(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "League has been reset successfully",
-	})
-}
-
-// GetLeagueTable retrieves the current league table
-func (h *LeagueHandler) GetLeagueTable(c *fiber.Ctx) error {
-	teams, err := h.service.GetLeagueTable()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"teams": teams,
 	})
 }
