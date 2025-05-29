@@ -1,0 +1,247 @@
+{
+	"info": {
+		"_postman_id": "a2c01b71-2af1-40b9-8b86-d5355b271227",
+		"name": "LeagueEndpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "36747716"
+	},
+	"item": [
+		{
+			"name": "Teams",
+			"item": [
+				{
+					"name": "Get All Teams",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/teams/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Team by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/teams/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Create New Team",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Team FC\",\n    \"strength\": 75\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/teams"
+					},
+					"response": []
+				},
+				{
+					"name": "Modify Team Stats",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated New Team FC\",\n    \"strength\": 80\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/teams/5"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Team",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated New Team FC\",\n    \"strength\": 80\n}"
+						},
+						"url": "{{baseURL}}/teams/5"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Matches",
+			"item": [
+				{
+					"name": "Get All Matches",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/matches/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Match by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/matches/7"
+					},
+					"response": []
+				},
+				{
+					"name": "Create New Match",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"week\": 10,\n    \"homeTeamId\": 1,\n    \"awayTeamId\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/matches/"
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Match",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"week\": 15,\n    \"homeTeamId\": 3,\n    \"awayTeamId\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/matches/16"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Match",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseURL}}/matches/16"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "League",
+			"item": [
+				{
+					"name": "Reset League",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseURL}}/league/reset"
+					},
+					"response": []
+				},
+				{
+					"name": "Play Next Week",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/league/play"
+					},
+					"response": []
+				},
+				{
+					"name": "Play All Week",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/league/play-all"
+					},
+					"response": []
+				},
+				{
+					"name": "Get League Table",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/league/"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Week Result",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/league/week/2"
+					},
+					"response": []
+				},
+				{
+					"name": "Edit Match Result",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"home_goals\": 1,\n  \"away_goals\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/league/edit-match/7"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "http://localhost:8080/api",
+			"type": "string"
+		}
+	]
+}

@@ -67,13 +67,23 @@ func (r *matchRepository) GetUnplayedWeeks() ([]int, error) {
 // Create adds a new match to the database
 func (r *matchRepository) Create(match *models.Match) error {
 	result := r.db.Create(match)
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Preload the team relationships
+	return r.db.Preload("HomeTeam").Preload("AwayTeam").First(match, match.ID).Error
 }
 
 // Update modifies an existing match in the database
 func (r *matchRepository) Update(match *models.Match) error {
 	result := r.db.Save(match)
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Preload the team relationships
+	return r.db.Preload("HomeTeam").Preload("AwayTeam").First(match, match.ID).Error
 }
 
 // Delete removes a match from the database by its ID

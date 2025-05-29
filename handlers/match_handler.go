@@ -93,6 +93,26 @@ func (h *MatchHandler) UpdateMatch(c *fiber.Ctx) error {
 		})
 	}
 
+	// First get the existing match to check if it's played
+	existingMatch, err := h.service.GetByID(id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Match not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Check if the match is already played
+	if existingMatch.IsPlayed {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Cannot update a match that has already been played",
+		})
+	}
+
 	// Create a new match instance and parse the request body
 	match := new(models.Match)
 	if err := c.BodyParser(match); err != nil {
